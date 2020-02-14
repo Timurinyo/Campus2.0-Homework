@@ -52,9 +52,9 @@ int main()
 	hints.ai_protocol = IPPROTO_UDP; // #MAYLEADTOPROBLEMS
 	//hints.ai_flags = AI_PASSIVE; // #MAYLEADTOPROBLEMS
 
-	std::string nicknameResponse;
-	std::cout << "Please enter your nickname before entering the chat" << std::endl;
-	std::getline(std::cin, nicknameResponse); // #TODO Use this later 
+	//std::string nicknameResponse;
+	//std::cout << "Please enter your nickname before entering the chat" << std::endl;
+	//std::getline(std::cin, nicknameResponse); // #TODO Use this later 
 
 	u_short defaultPort = 27154;
 
@@ -63,7 +63,7 @@ int main()
 		std::ostringstream oss;
 		oss << defaultPort;
 		iResult = getaddrinfo(NULL, oss.str().c_str(), &hints, &getAddrInfoResult);
-		if (iResult == 0)
+		if (iResult != 0)
 		{
 			defaultPort++;
 		}
@@ -102,7 +102,8 @@ int main()
 	}
 
 
-	char sendMSG[] = "Hello msg";
+	std::string sendMSG;// = "Hello msg";
+	std::getline(std::cin, sendMSG);
 
 	const int recvBufferLength = 50;
 	char recvBuffer[recvBufferLength] = "";
@@ -126,7 +127,7 @@ int main()
 	BroadcastAddress.sin_port = htons(defaultPort);
 	BroadcastAddress.sin_addr.s_addr = INADDR_BROADCAST; // OR INADDR_ANY, NEED to think
 
-	iResult = sendto(BroadcastingSocket, sendMSG, strlen(sendMSG) + 1, 0, (sockaddr*)&BroadcastAddress, sizeof(BroadcastAddress));
+	iResult = sendto(BroadcastingSocket, sendMSG.c_str(), sendMSG.length() + 1, 0, (sockaddr*)&BroadcastAddress, sizeof(BroadcastAddress));
 	if (iResult == SOCKET_ERROR)
 	{
 		std::cout << "Send failed: " << WSAGetLastError() << std::endl;
