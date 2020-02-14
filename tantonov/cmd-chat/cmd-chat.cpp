@@ -18,6 +18,11 @@
 
 int main()
 {
+	// At home you need to put the listening and typing into different threads. 
+	// You need to also figure out how to check if the port is already taken.
+	// You also need to create some kind of peers list to send them messages directly. 
+	//It should be easy to implement with recvFrom Sendto functionality. 
+
 	// Start the app
 	// Create a socket on free port that you will use later
 	// Start listen to who? everybody? 
@@ -89,6 +94,7 @@ int main()
 		std::cout << "Error at socket" << WSAGetLastError() << std::endl;
 		freeaddrinfo(getAddrInfoResult);
 		WSACleanup();
+		std::cin.get();
 		return 1;
 	}
 
@@ -98,6 +104,7 @@ int main()
 	{
 		std::cout << "Error in setting Broadcast option";
 		closesocket(BroadcastingSocket);
+		std::cin.get();
 		return 1;
 	}
 
@@ -116,9 +123,11 @@ int main()
 	if (bind(BroadcastingSocket, (sockaddr*)&RecvAddress, sizeof(RecvAddress)) < 0)
 	{
 		std::cout << "Error in BINDING" << WSAGetLastError();
+		std::cout << "Chosen port is " << defaultPort;
+
 
 		closesocket(BroadcastingSocket);
-
+		std::cin.get();
 		return 1;
 	}
 
@@ -133,6 +142,7 @@ int main()
 		std::cout << "Send failed: " << WSAGetLastError() << std::endl;
 		closesocket(BroadcastingSocket);
 		WSACleanup();
+		std::cin.get();
 		return 1;
 	}
 
