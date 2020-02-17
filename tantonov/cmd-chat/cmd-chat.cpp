@@ -1,6 +1,7 @@
 // cmd-chat.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+// #TODO remove includes
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdio.h>
@@ -8,6 +9,10 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+
+#include "WinSocketManager.h"
+
+
 //#include <string>
 //#include <stdlib.h>
 //#define DEFAULT_PORT 27015
@@ -33,150 +38,78 @@ int main()
     //std::cout << "Chat started running!\n";
 	std::cout << ("Chat started running!\n");
 
-	WSADATA wsaData;
+	WinSocketManager& socketManager = WinSocketManager::GetInstance();
 
-	int iResult;
+	socketManager.Initialize();
 
-	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (iResult != 0)
+	socketManager.CreateUDPSocket();
+
+	std::string helloMessage = "tantonov-chat";
+	socketManager.LaunchReceiverThread();
+	socketManager.BroadcastHelloMessage(helloMessage);
+
+	while (true)
 	{
-		std::cout << "WSAStartup failed:" << iResult << std::endl;
-		return 1;
+		socketManager.ProcessUserInput();
 	}
 
-	struct addrinfo* getAddrInfoResult = nullptr;
-	struct addrinfo* ptr = nullptr;
-	struct addrinfo hints;
-
-	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_INET;
-
-	//#define SOCK_STREAM     1               /* stream socket */
-	//#define SOCK_DGRAM      2               /* datagram socket */
-	hints.ai_socktype = SOCK_DGRAM; // #MAYLEADTOPROBLEMS
-	hints.ai_protocol = IPPROTO_UDP; // #MAYLEADTOPROBLEMS
-	//hints.ai_flags = AI_PASSIVE; // #MAYLEADTOPROBLEMS
-
-	//std::string nicknameResponse;
-	//std::cout << "Please enter your nickname before entering the chat" << std::endl;
-	//std::getline(std::cin, nicknameResponse); // #TODO Use this later 
-
-	u_short defaultPort = 27154;
-
-	do
-	{
-		std::ostringstream oss;
-		oss << defaultPort;
-		iResult = getaddrinfo(NULL, oss.str().c_str(), &hints, &getAddrInfoResult);
-		if (iResult != 0)
-		{
-			defaultPort++;
-		}
-	} while (iResult != 0);
-	 // #TODO 1) Seek for first available port 2) I will need another way to get the ip.
-	//if (iResult != 0) 
+	//const unsigned int hostNameBufferLength = 50;
+	//char hostNameBuffer[hostNameBufferLength];
+	//iResult = gethostname(hostNameBuffer, hostNameBufferLength);
+	//if (iResult != 0)
 	//{
-	//	std::cout << "getaddrinfo failed:" << iResult << std::endl;
-	//	WSACleanup(); // #TODO Transfer such function into destructor of the winSocket wrapper
+	//	std::cout << "gethostname failed: " << iResult << std::endl;
+	//	WSACleanup();
+	//	std::cin.get();
 	//	return 1;
 	//}
-
-	SOCKET BroadcastingSocket = INVALID_SOCKET;
-
-	// Attempt to connect to the first address returned by
-	// the call to getaddrinfo
-	ptr = getAddrInfoResult;
-
-	// Create a socket for connecting to server
-	BroadcastingSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-	if (BroadcastingSocket == INVALID_SOCKET)
-	{
-		std::cout << "Error at socket" << WSAGetLastError() << std::endl;
-		freeaddrinfo(getAddrInfoResult);
-		WSACleanup();
-		std::cin.get();
-		return 1;
-	}
-
-	const char broadcastOptionValue = '1';
-
-	if (setsockopt(BroadcastingSocket, SOL_SOCKET, SO_BROADCAST, &broadcastOptionValue, sizeof(broadcastOptionValue)) < 0)
-	{
-		std::cout << "Error in setting Broadcast option";
-		closesocket(BroadcastingSocket);
-		std::cin.get();
-		return 1;
-	}
+	//std::string messageToSend = hostNameBuffer;// = "Hello msg";
+	//messageToSend += " connected";
+	//std::getline(std::cin, messageToSend);
+	//std::string messageToSend = "Hello chat!";
 
 
-	std::string sendMSG;// = "Hello msg";
-	std::getline(std::cin, sendMSG);
 
-	const int recvBufferLength = 50;
-	char recvBuffer[recvBufferLength] = "";
+	// Now I need to do two things
+	// As a first thought I need to start a thread that will bind a socket to the ip port. and recvfrom any addr for incoming connections. It will remember all peers IP+port that sent info to me, and also display messages to the console. 
+	// My main thread will be blocked by std::cin and on enter will send the packet to list of peers listed in the listeners list. 
+	
+	//struct sockaddr_in SenderAddress;
+	//int len = sizeof(struct sockaddr_in);
 
-	struct sockaddr_in RecvAddress;
-	RecvAddress.sin_family = ptr->ai_family;
-	RecvAddress.sin_port = htons(defaultPort);
-	RecvAddress.sin_addr.s_addr = INADDR_ANY; // OR INADDR_ANY, NEED to think
+	//const int recvbufferlength = 50;
+	//char recvbuffer[recvbufferlength] = "";
+	
 
-	if (bind(BroadcastingSocket, (sockaddr*)&RecvAddress, sizeof(RecvAddress)) < 0)
-	{
-		std::cout << "Error in BINDING" << WSAGetLastError();
-		std::cout << "Chosen port is " << defaultPort;
-
-
-		closesocket(BroadcastingSocket);
-		std::cin.get();
-		return 1;
-	}
-
-	struct sockaddr_in BroadcastAddress;
-	BroadcastAddress.sin_family = ptr->ai_family;
-	BroadcastAddress.sin_port = htons(defaultPort);
-	BroadcastAddress.sin_addr.s_addr = INADDR_BROADCAST; // OR INADDR_ANY, NEED to think
-
-	iResult = sendto(BroadcastingSocket, sendMSG.c_str(), sendMSG.length() + 1, 0, (sockaddr*)&BroadcastAddress, sizeof(BroadcastAddress));
-	if (iResult == SOCKET_ERROR)
-	{
-		std::cout << "Send failed: " << WSAGetLastError() << std::endl;
-		closesocket(BroadcastingSocket);
-		WSACleanup();
-		std::cin.get();
-		return 1;
-	}
-
-	struct sockaddr_in SenderAddress;
-	int len = sizeof(struct sockaddr_in);
 
 	//do
 	//{
-	{
-		iResult = recvfrom(BroadcastingSocket, recvBuffer, recvBufferLength, 0, (sockaddr*)&SenderAddress, &len);
-		if (iResult > 0)
-		{
-			std::cout << "Bytes received: " << iResult << std::endl;
-		}
-		else if (iResult == 0)
-		{
-			std::cout << "Connection closed" << iResult << std::endl;
-		}
-		else
-		{
-			std::cout << "recv failed:: " << WSAGetLastError() << std::endl;
-		}
-	}
-	//} while (iResult > 0);
+	//Add super lambda that will capture everyting that it needs and will just recvFrom. the only problem stays is mutexes and adding a peers to the list of peers
+	//{
+	//	iResult = recvfrom(ChatSocket, recvBuffer, recvBufferLength, 0, (sockaddr*)&SenderAddress, &len);
+	//	if (iResult > 0)
+	//	{
+	//		std::cout << "Bytes received: " << iResult << std::endl;
+	//	}
+	//	else if (iResult == 0)
+	//	{
+	//		std::cout << "Connection closed" << iResult << std::endl;
+	//	}
+	//	else
+	//	{
+	//		std::cout << "recv failed:: " << WSAGetLastError() << std::endl;
+	//	}
+	//}
+	////} while (iResult > 0);
 
-	std::cout << "\n\n\tReceived message from Reader is =>  " << recvBuffer;
+	//std::cout << "\n\n\tReceived message from Reader is =>  " << recvBuffer;
 
-	std::cout << "\n\n\tpress any key to CONTINUE...";
+	//std::cout << "\n\n\tpress any key to CONTINUE...";
 
 	//std::string answer;
-	std::cin.get();// >> answer;
+	//std::cin.get();// >> answer;
 
-	closesocket(BroadcastingSocket);
-	WSACleanup();
+	socketManager.Deinitialize();
 	//// Connect to "server"
 	//iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
 	//if (iResult == SOCKET_ERROR)
@@ -273,14 +206,3 @@ int main()
 
 	// Disconnect on app close
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file

@@ -152,6 +152,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="cmd-chat.cpp" />
+    <ClCompile Include="Listener.cpp" />
+    <ClCompile Include="Talker.cpp" />
+    <ClCompile Include="WinSocketManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Listener.h" />
+    <ClInclude Include="Talker.h" />
+    <ClInclude Include="WinSocketManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
