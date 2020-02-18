@@ -29,24 +29,17 @@ public:
     void operator=(WinSocketManager const&) = delete;
 
     int Initialize();
+    int Deinitialize();
 
     int CreateUDPSocket();
 
     int LaunchReceiverThread();
 
-    int BroadcastHelloMessage(std::string const& messageToBroadcast);
+    int BroadcastHelloMessage();
 
     int SendMessageToPeers(std::string const& message);
 
-
-    int SetSocketMode(SendMode sendMode);
-
-    //SOCKET& GetSocket();
-
-    int Deinitialize();
-
     int ProcessUserInput();
-
 
 private:
 
@@ -56,14 +49,16 @@ private:
 
     int SendMessageTo(sockaddr_in const& recepeintAddress, std::string const& message);
 
+    int AllowBroadcast();
+
+
     WSADATA m_WsaData;
 
-    SOCKET m_ChatSocket = INVALID_SOCKET;
+    SOCKET m_ListenerSocket = INVALID_SOCKET;
+    SOCKET m_TalkerSocket = INVALID_SOCKET;
 
     struct sockaddr_in m_BroadcastAddress;
     struct sockaddr_in m_ReceivAddress;
-
-    SendMode m_SendMode = SendMode::Invalid;
 
     std::vector<struct sockaddr_in> m_PeersAddresses;
 
@@ -74,5 +69,8 @@ private:
 
     std::string m_UserInput;
     bool m_UserSentMessage = false;
+
+    const int m_DefaultPort = 9009;
+    std::vector<int> m_PortRange;
 };
 

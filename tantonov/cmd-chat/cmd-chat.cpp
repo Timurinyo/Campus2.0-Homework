@@ -44,9 +44,10 @@ int main()
 
 	socketManager.CreateUDPSocket();
 
-	std::string helloMessage = "tantonov-chat";
 	socketManager.LaunchReceiverThread();
-	socketManager.BroadcastHelloMessage(helloMessage);
+
+	//std::string helloMessage = m_Rec;
+	socketManager.BroadcastHelloMessage();
 
 	while (true)
 	{
