@@ -142,15 +142,24 @@ int WinSocketManager::LaunchReceiverThread()
 				}
 				else
 				{
+					bool isAlreadyInAdressBook = false;
 					for (const auto& peerAddressInfo : m_PeersAddresses)
 					{
-						if ((peerAddressInfo.receivedFrom.sin_addr.s_addr == senderAddress.sin_addr.s_addr) // #TODO explore this bug. Don't understand now wgy it doesn't work. Will help me in future to close some gaps.
-							&&
-							(peerAddressInfo.receivedFrom.sin_port == senderAddress.sin_port))
+						if ((peerAddressInfo.receivedFrom.sin_addr.s_addr == senderAddress.sin_addr.s_addr))
 						{
-							break;
+							//std::cout << "Addressess are the same" << std::endl;
+							if (peerAddressInfo.receivedFrom.sin_port == senderAddress.sin_port)
+							{
+								//std::cout << "Ports are the same" << std::endl;
+								isAlreadyInAdressBook = true;
+							}
 						}
+						// #TODO explore this bug. Don't understand now wgy it doesn't work. Will help me in future to close some gaps.
 						// if unknown peer found
+					}
+
+					if (!isAlreadyInAdressBook)
+					{
 						USHORT peersPort = (USHORT)std::strtoul(m_ReceivedDataBuffer, nullptr, 0);
 						std::lock_guard<std::mutex> guard(m_Mutex);
 						m_PeersAddresses.emplace_back(senderAddress, peersPort);
