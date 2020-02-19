@@ -41,6 +41,30 @@ public:
 
     int ProcessUserInput();
 
+    struct PeerAdress
+    {
+        PeerAdress(struct sockaddr_in receivedFromAddress, USHORT port)
+        {
+            receivedFrom = receivedFromAddress;
+
+            sendTo = receivedFromAddress;
+            sendTo.sin_port = port;
+        }
+        struct sockaddr_in receivedFrom;
+        struct sockaddr_in sendTo;
+    };
+
+    struct Message
+    {
+        Message(USHORT port, const std::string& text)
+        {
+            Port = port;
+            Text = text;
+        }
+        USHORT Port;
+        std::string Text;
+    };
+
 private:
 
     WinSocketManager() {};
@@ -60,7 +84,7 @@ private:
     struct sockaddr_in m_BroadcastAddress;
     struct sockaddr_in m_ReceivAddress;
 
-    std::vector<struct sockaddr_in> m_PeersAddresses;
+    std::vector<PeerAdress> m_PeersAddresses;
 
     int m_ReceivedDataBufferLength = 1024;
     char m_ReceivedDataBuffer[1024];

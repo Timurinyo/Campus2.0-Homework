@@ -137,25 +137,25 @@ int WinSocketManager::LaunchReceiverThread()
 				if (m_PeersAddresses.empty())
 				{
 					USHORT peersPort = (USHORT)std::strtoul(m_ReceivedDataBuffer, nullptr, 0);
-					senderAddress.sin_port = peersPort;
 					std::lock_guard<std::mutex> guard(m_Mutex);
-					m_PeersAddresses.push_back(senderAddress);
+					m_PeersAddresses.emplace_back(senderAddress, peersPort);
 				}
 				else
 				{
-					for (struct sockaddr_in peerAddressInfo : m_PeersAddresses)
+					for (const auto& peerAddressInfo : m_PeersAddresses)
 					{
-						if ((peerAddressInfo.sin_addr.s_addr == senderAddress.sin_addr.s_addr)
+						if ((peerAddressInfo.receivedFrom.sin_addr.s_addr == senderAddress.sin_addr.s_addr) // #TODO explore this bug. Don't understand now wgy it doesn't work. Will help me in future to close some gaps.
 							&&
-							(peerAddressInfo.sin_port == senderAddress.sin_port))
+							(peerAddressInfo.receivedFrom.sin_port == senderAddress.sin_port))
 						{
-							continue;
+							break;
 						}
 						// if unknown peer found
 						USHORT peersPort = (USHORT)std::strtoul(m_ReceivedDataBuffer, nullptr, 0);
-						senderAddress.sin_port = peersPort;
 						std::lock_guard<std::mutex> guard(m_Mutex);
-						m_PeersAddresses.push_back(senderAddress);
+						m_PeersAddresses.emplace_back(senderAddress, peersPort);
+
+						BroadcastHelloMessage();
 					}
 				}
 				//#TODO 1) make it thread safe 2) Add hostname or nickname of the sender
@@ -194,9 +194,9 @@ int WinSocketManager::SendMessageToPeers(std::string const& message)
 {
 	//assert(m_SendMode == SendMode::Direct && "Send mode should be set to Direct");
 	std::lock_guard<std::mutex> guard(m_Mutex);
-	for (sockaddr_in peerAddress : m_PeersAddresses)
+	for (PeerAdress peerAddress : m_PeersAddresses)
 	{
-		int directSendResult = SendMessageTo(peerAddress, message);
+		int directSendResult = SendMessageTo(peerAddress.sendTo, message);
 		assert(directSendResult == 0 && "Direct send failed");
 		//for (const int port : m_PortRange)
 		//{
